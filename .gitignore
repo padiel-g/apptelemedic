@@ -1,0 +1,9 @@
+node_modules/
+.next/
+src/db/*.db
+src/db/*.db-shm
+src/db/*.db-wal
+tsconfig.tsbuildinfo
+telemedic/
+test-post.js
+*.pack
