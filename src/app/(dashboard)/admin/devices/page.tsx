@@ -230,7 +230,7 @@ export default function DevicesPage() {
                         <Button variant="secondary" size="sm" onClick={() => toggleActive(d)}>
                           {d.is_active === 1 ? 'Deactivate' : 'Activate'}
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDelete(d)}>
+                        <Button variant="danger" size="sm" onClick={() => handleDelete(d)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </TableCell>

@@ -1,90 +1,117 @@
+-- SQLite Schema for Telemedic (migrated from Supabase PostgreSQL)
+-- Run: sqlite3 database/telemedic.db < schema.sql
+
+-- Users table
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    full_name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('patient', 'doctor', 'admin')),
-    specialization TEXT,
-    is_active INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'doctor', 'patient')),
+  is_active INTEGER DEFAULT 1,
+  specialization TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Patients table (one-to-one with patient users)
 CREATE TABLE IF NOT EXISTS patients (
-    id INTEGER PRIMARY KEY,
-    user_id INTEGER NOT NULL UNIQUE,
-    date_of_birth DATE,
-    gender TEXT,
-    blood_type TEXT,
-    emergency_contact TEXT,
-    assigned_doctor_id INTEGER,
-    conditions TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY(assigned_doctor_id) REFERENCES users(id) ON DELETE SET NULL
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  assigned_doctor_id TEXT REFERENCES users(id),
+  blood_type TEXT,
+  conditions TEXT,
+  allergies TEXT,
+  medications TEXT,
+  medical_notes TEXT,
+  height_cm REAL
 );
 
+-- Devices table
 CREATE TABLE IF NOT EXISTS devices (
-    id INTEGER PRIMARY KEY,
-    device_id TEXT UNIQUE NOT NULL,
-    api_key TEXT NOT NULL,
-    patient_id INTEGER,
-    is_active INTEGER DEFAULT 1,
-    last_seen_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE SET NULL
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  device_id TEXT UNIQUE NOT NULL,
+  api_key TEXT NOT NULL,
+  patient_id INTEGER REFERENCES patients(id) ON DELETE SET NULL,
+  label TEXT,
+  is_active INTEGER DEFAULT 1,
+  last_seen_at TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Readings table
 CREATE TABLE IF NOT EXISTS readings (
-    id INTEGER PRIMARY KEY,
-    patient_id INTEGER NOT NULL,
-    device_id INTEGER,
-    pulse INTEGER NOT NULL,
-    temperature REAL NOT NULL,
-    oxygen INTEGER NOT NULL,
-    bp_sys REAL,
-    bp_dia REAL,
-    source TEXT NOT NULL DEFAULT 'device',
-    notes TEXT,
-    is_abnormal INTEGER DEFAULT 0,
-    recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-    FOREIGN KEY(device_id) REFERENCES devices(id) ON DELETE CASCADE
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  device_id INTEGER REFERENCES devices(id) ON DELETE SET NULL,
+  pulse INTEGER NOT NULL,
+  temperature REAL NOT NULL,
+  oxygen INTEGER NOT NULL,
+  bp_sys REAL,
+  bp_dia REAL,
+  source TEXT NOT NULL DEFAULT 'device',
+  notes TEXT,
+  is_abnormal INTEGER DEFAULT 0,
+  recorded_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Alerts table (inferred from queries)
 CREATE TABLE IF NOT EXISTS alerts (
-    id INTEGER PRIMARY KEY,
-    patient_id INTEGER NOT NULL,
-    reading_id INTEGER,
-    message TEXT NOT NULL,
-    is_resolved INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-    FOREIGN KEY(reading_id) REFERENCES readings(id) ON DELETE CASCADE
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  message TEXT,
+  is_resolved INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY,
-    sender_id INTEGER NOT NULL,
-    receiver_id INTEGER NOT NULL,
-    patient_id INTEGER NOT NULL,
-    doctor_id INTEGER NOT NULL,
-    content TEXT NOT NULL,
-    is_read INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY(receiver_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-    FOREIGN KEY(doctor_id) REFERENCES users(id) ON DELETE CASCADE
+-- Symptoms table
+CREATE TABLE IF NOT EXISTS symptoms (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  severity TEXT NOT NULL DEFAULT 'mild',
+  body_area TEXT,
+  onset_date TEXT,
+  is_resolved INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Appointments table
+CREATE TABLE IF NOT EXISTS appointments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  doctor_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  appointment_date TEXT NOT NULL,
+  appointment_time TEXT NOT NULL,
+  duration_minutes INTEGER DEFAULT 30,
+  type TEXT NOT NULL DEFAULT 'consultation',
+  status TEXT NOT NULL DEFAULT 'pending',
+  reason TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Audit logs table (inferred)
 CREATE TABLE IF NOT EXISTS audit_logs (
-    id INTEGER PRIMARY KEY,
-    user_id INTEGER,
-    action TEXT NOT NULL,
-    target_type TEXT NOT NULL,
-    target_id INTEGER,
-    details TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT REFERENCES users(id),
+  action TEXT NOT NULL,
+  target_type TEXT,
+  target_id TEXT,
+  details TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
 );
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_patients_user_id ON patients(user_id);
+CREATE INDEX IF NOT EXISTS idx_patients_assigned_doctor ON patients(assigned_doctor_id);
+CREATE INDEX IF NOT EXISTS idx_readings_patient_id ON readings(patient_id);
+CREATE INDEX IF NOT EXISTS idx_readings_recorded_at ON readings(recorded_at);
+CREATE INDEX IF NOT EXISTS idx_devices_patient_id ON devices(patient_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_patient_id ON alerts(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_symptoms_patient_id ON symptoms(patient_id);

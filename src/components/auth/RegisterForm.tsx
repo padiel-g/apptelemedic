@@ -21,13 +21,11 @@ export function RegisterForm() {
     confirm_password: '',
     role: UserRole.Patient,
     specialization: '',
-    primary_condition: '',
-    other_conditions: ''
+    primary_condition: ''
   });
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [assignedDoctor, setAssignedDoctor] = useState<{full_name: string, specialization: string} | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +48,6 @@ export function RegisterForm() {
         role: formData.role,
         specialization: formData.role === UserRole.Doctor ? formData.specialization : undefined,
         primary_condition: formData.role === UserRole.Patient ? formData.primary_condition : undefined,
-        other_conditions: formData.role === UserRole.Patient ? formData.other_conditions : undefined,
       });
       
       const res = await fetch('/api/auth/register', {
@@ -62,11 +59,8 @@ export function RegisterForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
       
-      if (data.assignedDoctor) {
-        setAssignedDoctor(data.assignedDoctor);
-      }
       setSuccess(true);
-      setTimeout(() => router.push('/login'), 4000);
+      setTimeout(() => router.push('/login'), 2000);
       
     } catch (err: any) {
       if (err instanceof z.ZodError) {
@@ -88,14 +82,7 @@ export function RegisterForm() {
     return (
       <div className="text-center space-y-4 p-4 border border-emerald-200 bg-emerald-50 rounded-lg">
         <h3 className="text-emerald-800 font-semibold text-lg">Registration Successful!</h3>
-        {assignedDoctor && (
-          <div className="bg-white p-3 rounded border border-emerald-100 shadow-sm my-2">
-            <p className="text-slate-800 text-sm font-medium">Assigned to</p>
-            <p className="text-emerald-700 font-semibold">{assignedDoctor.full_name}</p>
-            <p className="text-slate-500 text-xs">{assignedDoctor.specialization}</p>
-          </div>
-        )}
-        <p className="text-emerald-600 text-sm mt-4">Redirecting to login...</p>
+        <p className="text-emerald-600 text-sm">Redirecting to login...</p>
       </div>
     );
   }
@@ -196,16 +183,6 @@ export function RegisterForm() {
             <p className="mt-1 text-sm text-red-500">{fieldErrors.primary_condition}</p>
           )}
         </div>
-      )}
-
-      {formData.role === UserRole.Patient && (
-        <Input
-          label="Other conditions / Details (Optional)"
-          placeholder="e.g. Allergy to penicillin"
-          value={formData.other_conditions}
-          onChange={e => setFormData({...formData, other_conditions: e.target.value})}
-          error={fieldErrors.other_conditions}
-        />
       )}
       
       <Button type="submit" className="w-full" isLoading={loading}>

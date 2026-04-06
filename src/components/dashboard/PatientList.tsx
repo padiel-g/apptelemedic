@@ -3,9 +3,11 @@ import { PatientRow, PatientWithData } from './PatientRow';
 
 interface PatientListProps {
   patients: PatientWithData[];
+  currentUserId?: number;
+  onAssignChange?: () => void;
 }
 
-export function PatientList({ patients }: PatientListProps) {
+export function PatientList({ patients, currentUserId, onAssignChange }: PatientListProps) {
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
       <Table>
@@ -13,7 +15,7 @@ export function PatientList({ patients }: PatientListProps) {
           <TableRow>
             <TableHead>Patient</TableHead>
             <TableHead>Pulse (bpm)</TableHead>
-            <TableHead>Temp (°C)</TableHead>
+            <TableHead>Temp ({'\u00B0'}C)</TableHead>
             <TableHead>SpO2 (%)</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Last Update</TableHead>
@@ -29,7 +31,7 @@ export function PatientList({ patients }: PatientListProps) {
             </TableRow>
           ) : (
             patients.map(patient => (
-              <PatientRow key={patient.id} patient={patient} />
+              <PatientRow key={patient.id} patient={patient} currentUserId={currentUserId} onAssignChange={onAssignChange} />
             ))
           )}
         </TableBody>

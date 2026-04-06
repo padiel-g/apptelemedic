@@ -1,14 +1,15 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'TeleMedic - Remote Health Monitoring',
   description: 'Production-ready telemedicine web application for real-time health monitoring.',
   manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
   themeColor: '#2563EB',
 };
 
@@ -22,10 +23,10 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#2563EB" />
-        <link rel="icon" href="/icon-192.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="icon" href="/icon-192.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
       </head>
-      <body className={inter.className}>
+      <body className="font-sans">
         <AuthProvider>{children}</AuthProvider>
         <script
           dangerouslySetInnerHTML={{

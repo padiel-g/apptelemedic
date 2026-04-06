@@ -11,14 +11,16 @@ interface SelectProps {
   placeholder?: string;
   className?: string;
   label?: string;
+  id?: string;
 }
 
-export function Select({ value, onChange, options, placeholder = 'Select...', className, label }: SelectProps) {
+export function Select({ value, onChange, options, placeholder = 'Select...', className, label, id }: SelectProps) {
   return (
     <div className={className}>
       {label && <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>}
       <div className="relative w-full">
         <select 
+          id={id}
           value={value} 
           onChange={(e) => onChange(e.target.value)}
           className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none cursor-pointer"

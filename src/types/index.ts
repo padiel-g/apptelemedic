@@ -5,7 +5,7 @@ export enum UserRole {
 }
 
 export interface User {
-  id: number;
+  id: string;
   email: string;
   password_hash: string;
   full_name: string;
@@ -18,12 +18,12 @@ export interface User {
 
 export interface Patient {
   id: number;
-  user_id: number;
+  user_id: string;
   date_of_birth: string | null;
   gender: 'male' | 'female' | 'other' | null;
   blood_type: string | null;
   emergency_contact: string | null;
-  assigned_doctor_id: number | null;
+  assigned_doctor_id: string | null;
   conditions: string | null;
   created_at: string;
 }
@@ -86,7 +86,7 @@ export interface AuditLog {
 }
 
 export interface JWTPayload {
-  userId: number;
+  userId: string;
   email: string;
   role: UserRole;
 }

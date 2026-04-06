@@ -26,7 +26,7 @@ export async function PATCH(request: Request) {
       const doctor = findBestDoctorForCondition(cond);
       db.prepare('UPDATE patients SET assigned_doctor_id = ? WHERE user_id = ?').run(doctor ? doctor.id : null, user.id);
     }
-    const updated = getQuery<any>(`SELECT * FROM patients WHERE user_id = ?`, [user.id]);
+    const updated = query(`SELECT * FROM patients WHERE user_id = ?`, [user.id])[0];
     return NextResponse.json({ profile: updated });
   } catch (error) {
     console.error('Patient profile PATCH error:', error);
@@ -35,7 +35,7 @@ export async function PATCH(request: Request) {
 }
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { db, getQuery } from '@/lib/db';
+import { supabase as db, query } from '@/lib/db';
 
 export async function GET(request: Request) {
   try {
@@ -43,10 +43,10 @@ export async function GET(request: Request) {
     if (!user || user.role !== 'patient') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const patient = getQuery<any>(
+    const patient = query<any>(
       `SELECT p.*, u.full_name, u.email, u.id as user_id FROM patients p JOIN users u ON p.user_id = u.id WHERE p.user_id = ?`,
       [user.id]
-    );
+    )[0];
     if (!patient) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     return NextResponse.json({ profile: patient });
   } catch (error) {

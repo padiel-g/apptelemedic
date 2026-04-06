@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar, CalendarX2, Info } from 'lucide-react';
+import { Calendar, CalendarX2, Info, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { submitWithOfflineSupport } from '@/lib/sync-manager';
+import { useRouter } from 'next/navigation';
 
 const TYPES = [
   { value: 'consultation', label: 'Consultation' },
@@ -77,7 +78,7 @@ function getDayNum(dateStr: string) {
   return date.getDate().toString();
 }
 
-function AppointmentCard({ a, onCancel, isPast }: { a: any; onCancel?: (id: number) => void; isPast?: boolean }) {
+function AppointmentCard({ a, onCancel, isPast, onVideoCall }: { a: any; onCancel?: (id: number) => void; isPast?: boolean; onVideoCall?: (appt: any) => void }) {
   return (
     <div className={cn("flex flex-col sm:flex-row p-5 rounded-xl border border-slate-200 hover:shadow-md transition-shadow duration-200 border-l-4", getStatusColor(a.status))}>
       <div className="flex flex-row sm:flex-col items-center justify-center min-w-[100px] mb-4 sm:mb-0 sm:pr-5 sm:border-r border-slate-100 gap-3 sm:gap-1">
@@ -111,6 +112,11 @@ function AppointmentCard({ a, onCancel, isPast }: { a: any; onCancel?: (id: numb
         <span className={cn("px-3 py-1 text-xs font-semibold rounded-full border", getBadgeColor(a.status))}>
           {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
         </span>
+        {a.status === 'confirmed' && onVideoCall && (
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5" onClick={() => onVideoCall(a)}>
+            <Video className="w-3.5 h-3.5" /> Join Call
+          </Button>
+        )}
         {a.status === 'pending' && onCancel && (
           <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => onCancel(a.id)}>
             Cancel Booking
@@ -122,6 +128,7 @@ function AppointmentCard({ a, onCancel, isPast }: { a: any; onCancel?: (id: numb
 }
 
 export default function PatientAppointmentsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -342,7 +349,7 @@ export default function PatientAppointmentsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {upcoming.map(a => <AppointmentCard key={a.id} a={a} onCancel={cancelAppointment} />)}
+            {upcoming.map(a => <AppointmentCard key={a.id} a={a} onCancel={cancelAppointment} onVideoCall={(appt) => router.push(`/patient/video-call?appointmentId=${appt.id}&doctorName=${encodeURIComponent(appt.doctor_name)}`)} />)}
           </div>
         )}
       </section>

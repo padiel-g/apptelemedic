@@ -1,17 +1,23 @@
-# Doctor Dashboard Patient Assignment Fix - TODO
+# Telemedic App - Feature Implementation Progress
 
-## Plan Steps (Approved):
-1. ✅ [Complete] DB inspection - all patients already assigned to doctor ID 2
-2. ✅ [Complete] Analyzed files: admin create/update missing assignment logic
-3. ✅ Update `src/app/api/admin/users/route.ts` - Add auto-assign in POST for patients
-4. ✅ Update `src/app/api/admin/users/[userId]/route.ts` - Add `assigned_doctor_id` handling in PATCH
-5. ✅ Check/update `src/lib/validators.ts` for schema support (already exists)
-6. ✅ Add frontend dropdown in admin panel for doctor assignment (modal + Select component)
-7. ✅ Test: Backend fixed (admin POST/PATCH), frontend modal for doctor assignment added
-8. ⚠️ Note: Patients assigned to doctor 2; if logged-in doctor is 4 (Gerald), dashboard shows 0. Use admin panel to reassign patients to ID 4 or login as Dr. Sarah (ID 2).
-9. ✅ Task complete - Doctor dashboard now works with proper assignments & admin management.
+## Current Task: Feature 3,4,5 (Doctor Dashboard, Patient Portal, Messaging)
 
-**Next:** Backend edits first.
+### Steps:
 
-**Status:** Starting implementation...
+- [x] Create comprehensive edit plan ✅
+- [ ] 1. Create messages table migration
+- [ ] 2. Update migrate-sqlite.ts and run migration
+- [ ] 3. Fix src/app/api/messages/route.ts for SQLite + add missing endpoints
+- [ ] 4. Add Message type to src/types/index.ts
+- [ ] 5. Add messageSchema to src/lib/validators.ts
+- [ ] 6. Create src/app/(dashboard)/doctor/[patientId]/page.tsx
+- [ ] 7. Update PatientList/PatientRow for navigation to patient detail
+- [ ] 8. Enhance ReadingsChart with time range selector
+- [ ] 9. Fix ManualEntryModal save bug
+- [ ] 10. Add unread badge to Sidebar
+- [ ] 11. Style ChatBox (bubbles, timestamps)
+- [ ] 12. Add recent readings table to doctor patient detail
+- [ ] 13. Test npm run dev, browser functionality
+- [ ] 14. Verify all features work
 
+**Next:** DB migration

@@ -127,7 +127,7 @@ export default function UsersManagement() {
                            Assign Doctor
                          </Button>
                        )}
-                       <Button variant="destructive" size="sm" onClick={() => deleteUser(u.id)}>
+                       <Button variant="danger" size="sm" onClick={() => deleteUser(u.id)}>
                          <Trash2 className="w-4 h-4" />
                        </Button>
                     </TableCell>

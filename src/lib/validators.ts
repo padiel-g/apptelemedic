@@ -25,7 +25,6 @@ export const registerSchema = z.object({
   role: z.nativeEnum(UserRole),
   specialization: z.string().optional(),
   primary_condition: z.string().optional(),
-  other_conditions: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.role === UserRole.Doctor) {
     if (!data.specialization || !DOCTOR_SPECIALIZATIONS.includes(data.specialization as any)) {
@@ -84,7 +83,7 @@ export const patientUpdateSchema = z.object({
   blood_type: z.string().nullable().optional(),
   emergency_contact: z.string().nullable().optional(),
   assigned_doctor_id: z.number().nullable().optional(),
-  conditions: z.string().nullable().optional(),
+  condition: z.string().nullable().optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

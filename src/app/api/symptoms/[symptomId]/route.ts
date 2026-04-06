@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { supabase as db } from '@/lib/db';
 import { symptomUpdateSchema } from '@/lib/symptomValidators';
 
 export async function PATCH(request: Request, { params }: { params: { symptomId: string } }) {

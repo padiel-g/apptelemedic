@@ -1,6 +1,7 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { db, getQuery } from '@/lib/db';
+import { supabase } from '@/lib/db';
 
 export async function GET(request: Request, { params }: { params: { patientId: string } }) {
   try {
@@ -9,14 +10,13 @@ export async function GET(request: Request, { params }: { params: { patientId: s
 
     const patientId = parseInt(params.patientId);
 
-    const patient = getQuery<any>(`
-      SELECT p.*, u.full_name, u.email 
-      FROM patients p 
-      JOIN users u ON p.user_id = u.id 
-      WHERE p.id = ?
-    `, [patientId]);
+    const { data: patient, error: patientError } = await supabase
+      .from('patients')
+      .select('*, user:users!patients_user_id_fkey(full_name, email)')
+      .eq('id', patientId)
+      .maybeSingle();
 
-    if (!patient) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+    if (patientError || !patient) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
 
     if (user.role === 'patient' && patient.user_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -26,14 +26,19 @@ export async function GET(request: Request, { params }: { params: { patientId: s
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const readings = db.prepare('SELECT * FROM readings WHERE patient_id = ? ORDER BY recorded_at DESC LIMIT 20').all(patientId);
+    const { data: readings } = await supabase
+      .from('readings')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('recorded_at', { ascending: false })
+      .limit(20);
 
     return NextResponse.json({
       patient: {
         ...patient,
-        user: { id: patient.user_id, full_name: patient.full_name, email: patient.email }
+        user: { id: patient.user_id, full_name: patient.user?.full_name, email: patient.user?.email }
       },
-      readings
+      readings: readings || []
     });
   } catch (error) {
     console.error('Patient details GET error:', error);

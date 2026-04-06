@@ -1,39 +1,40 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/db';
 
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUser(request);
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const resolved = searchParams.get('resolved') === 'true' ? 1 : 0;
-    
-    let query = `
-      SELECT a.*, p.user_id, u.full_name as patient_name
-      FROM alerts a
-      JOIN patients p ON a.patient_id = p.id
-      JOIN users u ON p.user_id = u.id
-      WHERE a.is_resolved = ?
-    `;
-    const params: any[] = [resolved];
+    const resolved = searchParams.get('resolved') === 'true';
 
+    let validPids = null;
     if (user.role === 'doctor') {
-      query += ` AND p.assigned_doctor_id = ?`;
-      params.push(user.id);
+       const { data: pids } = await supabase.from('patients').select('id').eq('assigned_doctor_id', user.id);
+       validPids = pids?.map(p => p.id) || [];
     } else if (user.role === 'patient') {
-       query += ` AND p.user_id = ?`;
-       params.push(user.id);
+       const { data: pids } = await supabase.from('patients').select('id').eq('user_id', user.id);
+       validPids = pids?.map(p => p.id) || [];
     }
 
-    query += ` ORDER BY a.created_at DESC LIMIT 50`;
+    let fetchQuery = supabase.from('alerts').select('*, patient:patients!alerts_patient_id_fkey(user_id, user:users!patients_user_id_fkey(full_name))').eq('is_resolved', resolved).order('created_at', { ascending: false }).limit(50);
 
-    const alerts = db.prepare(query).all(...params);
+    if (validPids !== null) {
+       if (validPids.length === 0) return NextResponse.json({ data: [] });
+       fetchQuery = fetchQuery.in('patient_id', validPids);
+    }
 
-    return NextResponse.json({ data: alerts });
+    const { data: alerts, error } = await fetchQuery;
+    if (error) throw error;
+
+    const formattedAlerts = alerts?.map((a: any) => ({
+      ...a, patient_user_id: a.patient?.user_id, patient_name: a.patient?.user?.full_name
+    })) || [];
+
+    return NextResponse.json({ data: formattedAlerts });
   } catch (error) {
     console.error('Alerts GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

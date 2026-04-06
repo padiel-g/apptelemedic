@@ -11,18 +11,28 @@
    npm install
    ```
 
-2. **Environment Variables**
-   Make sure to copy `.env.example` to `.env.local`:
-   ```bash
-   cp .env.example .env.local
-   ```
-   *Note: Set your own `JWT_SECRET` for security.*
+### Database Setup (Supabase)
+1. Go to https://supabase.com and create a free project
+2. Go to SQL Editor in the Supabase dashboard
+3. Paste and run the contents of database/supabase-schema.sql
+4. Paste and run the contents of database/supabase-seed.sql
+5. Go to Settings > API and copy:
+   - Project URL → NEXT_PUBLIC_SUPABASE_URL
+   - anon public key → NEXT_PUBLIC_SUPABASE_ANON_KEY
+   - service_role key → SUPABASE_SERVICE_ROLE_KEY
+6. Add these to your .env.local file
 
-3. **Initialize Database**
-   Since the app uses SQLite, the database doesn't require a dedicated server. Simply run the init script to create tables and insert seed data:
-   ```bash
-   npm run db:init
-   ```
+### Netlify Deployment
+1. Push code to GitHub
+2. Connect repo to Netlify
+3. Set build command: npm run build
+4. Set publish directory: .next
+5. Add environment variables in Netlify dashboard:
+   - NEXT_PUBLIC_SUPABASE_URL
+   - NEXT_PUBLIC_SUPABASE_ANON_KEY
+   - SUPABASE_SERVICE_ROLE_KEY
+   - JWT_SECRET
+6. Deploy
 
 4. **Start Development Server**
    ```bash
@@ -36,4 +46,4 @@
 - **Patient**: `patient@telemedic.local` / `telemedic2024`
 
 ## ESP32 Device Registration
-To connect an ESP32, you must first create it in the database and get the API key. In this MVP, device creation is done via the SQLite database directly, or via an admin interface when added in the future. Check the `devices` table for `api_key` to use in `ESP32_EXAMPLE.ino`.
+To connect an ESP32, you must first create it via the admin interface when added in the future. Check the `devices` table for `api_key` to use in `ESP32_EXAMPLE.ino`.

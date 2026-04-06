@@ -1,6 +1,7 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { loginSchema } from '@/lib/validators';
-import { getQuery } from '@/lib/db';
+import { getOne } from '@/lib/db';
 import { verifyPassword, generateToken } from '@/lib/auth';
 import { User } from '@/types';
 
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     
     const { email, password } = result.data;
     
-    const user = getQuery<User>('SELECT * FROM users WHERE email = ? AND is_active = 1', [email]);
+    const user = await getOne<User>('users', { email, is_active: 1 });
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }

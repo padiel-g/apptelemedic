@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Calendar, CalendarCheck } from 'lucide-react';
+import { Calendar, CalendarCheck, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -64,7 +65,7 @@ function getTimeSlots(dateStr: string) {
 
 type TabType = 'pending' | 'confirmed' | 'today' | 'all';
 
-function AppointmentCard({ a, onAction }: { a: any; onAction: (action: string, appt: any) => void }) {
+function AppointmentCard({ a, onAction, onVideoCall }: { a: any; onAction: (action: string, appt: any) => void; onVideoCall?: (appt: any) => void }) {
   const isPast = ['completed', 'cancelled', 'declined', 'rescheduled'].includes(a.status);
   return (
     <div className={cn("flex flex-col sm:flex-row p-5 rounded-xl border border-slate-200 hover:shadow-md transition-shadow duration-200 border-l-4", getStatusColor(a.status))}>
@@ -107,6 +108,9 @@ function AppointmentCard({ a, onAction }: { a: any; onAction: (action: string, a
         
         {a.status === 'confirmed' && (
           <div className="flex flex-col gap-2 w-full">
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full flex items-center justify-center gap-1.5" onClick={() => onVideoCall?.(a)}>
+              <Video className="w-3.5 h-3.5" /> Video Call
+            </Button>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700 w-full" onClick={() => onAction('completeModal', a)}>Complete</Button>
             <div className="flex gap-2 w-full">
                <Button size="sm" variant="ghost" className="bg-amber-50 text-amber-700 hover:bg-amber-100 flex-1 px-1" onClick={() => onAction('rescheduleModal', a)}>Reschedule</Button>
@@ -120,6 +124,7 @@ function AppointmentCard({ a, onAction }: { a: any; onAction: (action: string, a
 }
 
 export default function DoctorAppointmentsPage() {
+  const router = useRouter();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('pending');
@@ -252,7 +257,7 @@ export default function DoctorAppointmentsPage() {
             <p className="text-slate-500 text-sm max-w-sm mb-6">Looks like your schedule is clear for this category.</p>
           </div>
         ) : (
-          filtered.map(a => <AppointmentCard key={a.id} a={a} onAction={handleAction} />)
+          filtered.map(a => <AppointmentCard key={a.id} a={a} onAction={handleAction} onVideoCall={(appt) => router.push(`/doctor/video-call?appointmentId=${appt.id}&patientName=${encodeURIComponent(appt.patient_name)}`)} />)
         )}
       </div>
 
