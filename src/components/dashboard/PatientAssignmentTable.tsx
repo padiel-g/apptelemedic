@@ -12,7 +12,7 @@ import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 interface PatientAssignmentTableProps {
   patients: PatientWithData[];
   view: 'mine' | 'all';
-  currentDoctorId: number;
+  currentDoctorId: string;
   onAssign: (patientId: number, patientName: string, doctorName?: string | null) => void;
   onRemove: (patientId: number, patientName: string) => void;
   actionLoadingId: number | null;

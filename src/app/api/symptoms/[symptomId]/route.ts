@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { supabase as db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { symptomUpdateSchema } from '@/lib/symptomValidators';
 
 export async function PATCH(request: Request, { params }: { params: { symptomId: string } }) {
@@ -9,10 +9,11 @@ export async function PATCH(request: Request, { params }: { params: { symptomId:
     if (!user || user.role !== 'patient') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const db = getDb();
     const symptomId = parseInt(params.symptomId);
-    const symptom = db.prepare('SELECT * FROM symptoms WHERE id = ?').get(symptomId);
+    const symptom = db.prepare('SELECT * FROM symptoms WHERE id = ?').get(symptomId) as any;
     if (!symptom) return NextResponse.json({ error: 'Symptom not found' }, { status: 404 });
-    const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id);
+    const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id) as any;
     if (!patient || symptom.patient_id !== patient.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -42,10 +43,11 @@ export async function DELETE(request: Request, { params }: { params: { symptomId
     if (!user || user.role !== 'patient') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const db = getDb();
     const symptomId = parseInt(params.symptomId);
-    const symptom = db.prepare('SELECT * FROM symptoms WHERE id = ?').get(symptomId);
+    const symptom = db.prepare('SELECT * FROM symptoms WHERE id = ?').get(symptomId) as any;
     if (!symptom) return NextResponse.json({ error: 'Symptom not found' }, { status: 404 });
-    const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id);
+    const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id) as any;
     if (!patient || symptom.patient_id !== patient.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

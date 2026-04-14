@@ -20,9 +20,12 @@ export async function GET(request: Request) {
              u.email as user_email,
              r.id as reading_id,
              r.pulse, r.temperature, r.oxygen, r.bp_sys, r.bp_dia, r.source, r.recorded_at as last_reading_at, r.is_abnormal,
-             d.last_seen_at as device_last_seen_at
+             d.last_seen_at as device_last_seen_at,
+             doc.full_name as doctor_full_name,
+             doc.specialization as doctor_specialization
       FROM patients p
       JOIN users u ON p.user_id = u.id
+      LEFT JOIN users doc ON p.assigned_doctor_id = doc.id
       LEFT JOIN readings r ON r.id = (
         SELECT r2.id FROM readings r2 WHERE r2.patient_id = p.id ORDER BY r2.recorded_at DESC LIMIT 1
       )
@@ -74,6 +77,7 @@ export async function GET(request: Request) {
           full_name: p.user_full_name,
           email: p.user_email
         },
+        doctor: p.doctor_full_name ? { full_name: p.doctor_full_name, specialization: p.doctor_specialization } : null,
         latestReading,
         deviceLastSeenAt: p.device_last_seen_at || null,
       };

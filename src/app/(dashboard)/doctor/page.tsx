@@ -13,7 +13,7 @@ export default function DoctorDashboard() {
   const [search, setSearch] = useState('');
   const [condition, setCondition] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<number | undefined>(undefined);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const fetcher = async () => {
@@ -54,7 +54,7 @@ export default function DoctorDashboard() {
   }, [refetch]);
 
   const pts = patients || [];
-  const myPatients = pts.filter(p => currentUserId != null && Number(p.assigned_doctor_id) === currentUserId);
+  const myPatients = pts.filter(p => currentUserId != null && p.assigned_doctor_id === currentUserId);
   const abnormalCount = myPatients.filter(p => p.latestReading?.is_abnormal).length;
 
   return (

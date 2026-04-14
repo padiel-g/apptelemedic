@@ -18,12 +18,17 @@ CREATE TABLE IF NOT EXISTS patients (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
   assigned_doctor_id TEXT REFERENCES users(id),
+  date_of_birth TEXT,
+  gender TEXT CHECK (gender IN ('male', 'female', 'other')),
   blood_type TEXT,
+  emergency_contact TEXT,
   conditions TEXT,
   allergies TEXT,
   medications TEXT,
   medical_notes TEXT,
-  height_cm REAL
+  height_cm REAL,
+  weight_kg REAL,
+  created_at TEXT DEFAULT (datetime('now'))
 );
 
 -- Devices table
@@ -54,13 +59,26 @@ CREATE TABLE IF NOT EXISTS readings (
   recorded_at TEXT DEFAULT (datetime('now'))
 );
 
--- Alerts table (inferred from queries)
+-- Alerts table
 CREATE TABLE IF NOT EXISTS alerts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
-  type TEXT NOT NULL,
+  reading_id INTEGER REFERENCES readings(id) ON DELETE SET NULL,
+  type TEXT DEFAULT 'vitals',
   message TEXT,
   is_resolved INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Messages table
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sender_id TEXT NOT NULL REFERENCES users(id),
+  receiver_id TEXT NOT NULL REFERENCES users(id),
+  patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  doctor_id TEXT NOT NULL REFERENCES users(id),
+  content TEXT NOT NULL,
+  is_read INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -115,3 +133,6 @@ CREATE INDEX IF NOT EXISTS idx_alerts_patient_id ON alerts(patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_symptoms_patient_id ON symptoms(patient_id);
+CREATE INDEX IF NOT EXISTS idx_messages_patient_id ON messages(patient_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_receiver_id ON messages(receiver_id);

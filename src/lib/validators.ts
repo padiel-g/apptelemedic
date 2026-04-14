@@ -82,7 +82,7 @@ export const patientUpdateSchema = z.object({
   gender: z.enum(['male', 'female', 'other']).nullable().optional(),
   blood_type: z.string().nullable().optional(),
   emergency_contact: z.string().nullable().optional(),
-  assigned_doctor_id: z.number().nullable().optional(),
+  assigned_doctor_id: z.string().nullable().optional(),
   condition: z.string().nullable().optional(),
 });
 

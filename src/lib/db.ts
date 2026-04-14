@@ -89,13 +89,3 @@ export function closeDb() {
 }
 
 export { getDb };
-
-// Re-export a lazy getter so legacy `import { supabase } from '@/lib/db'` works.
-// It's a getter (not a top-level call) so the DB file isn't opened at import time.
-export const supabase = new Proxy({} as Database.Database, {
-  get(_target, prop, receiver) {
-    const instance = getDb();
-    const value = (instance as any)[prop];
-    return typeof value === 'function' ? value.bind(instance) : value;
-  },
-});

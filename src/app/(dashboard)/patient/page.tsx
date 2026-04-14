@@ -9,13 +9,21 @@ import { Button } from '@/components/ui/Button';
 import { ManualEntryModal } from '@/components/dashboard/ManualEntryModal';
 import { ChatBox } from '@/components/dashboard/ChatBox';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function PatientDashboard() {
   const { data, isLoading, refetch } = useVitals();
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+
+  // Poll for doctor assignment updates every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshUser();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [refreshUser]);
 
   const latestReading = data?.latestReading || null;
   const readings = data?.readings || [];

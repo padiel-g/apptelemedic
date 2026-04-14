@@ -12,8 +12,8 @@ import { Spinner } from '@/components/ui/Spinner';
 
 interface Message {
   id: number;
-  sender_id: number;
-  receiver_id: number;
+  sender_id: string;
+  receiver_id: string;
   content: string;
   is_read: number;
   created_at: string;

@@ -3,7 +3,7 @@ import { PatientRow, PatientWithData } from './PatientRow';
 
 interface PatientListProps {
   patients: PatientWithData[];
-  currentUserId?: number;
+  currentUserId?: string;
   onAssignChange?: () => void;
 }
 

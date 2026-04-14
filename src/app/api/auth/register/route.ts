@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { registerSchema } from '@/lib/validators';
-import { supabase as db, query } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 import { User } from '@/types';
 import { findBestDoctorForCondition } from '@/lib/doctorAssignment';
 
 export async function POST(request: Request) {
   try {
+    const db = getDb();
     const body = await request.json();
     const result = registerSchema.safeParse(body);
     
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     
     const { email, password, full_name, role, specialization, primary_condition } = result.data;
 
-    const existingUser = query<User>('SELECT * FROM users WHERE email = ?', [email])[0];
+    const existingUser = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as User | undefined;
     if (existingUser) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
     }
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 
     const newUserId = insertTransaction();
     
-    const newUser = query<User>('SELECT id, email, full_name, role, is_active FROM users WHERE id = ?', [newUserId])[0];
+    const newUser = db.prepare('SELECT id, email, full_name, role, is_active FROM users WHERE id = ?').get(newUserId) as User;
     
     return NextResponse.json({ user: newUser }, { status: 201 });
   } catch (error) {

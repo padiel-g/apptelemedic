@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { supabase as db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { symptomSchema } from '@/lib/symptomValidators';
 
 export async function POST(request: Request) {
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
     if (!result.success) {
       return NextResponse.json({ error: 'Invalid input', details: result.error.flatten().fieldErrors }, { status: 400 });
     }
-    const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id);
+    const db = getDb();
+    const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id) as any;
     if (!patient) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
     const { title, description, severity, body_area, onset_date } = result.data;
     const info = db.prepare(`INSERT INTO symptoms (patient_id, title, description, severity, body_area, onset_date) VALUES (?, ?, ?, ?, ?, ?)`)
@@ -31,9 +32,10 @@ export async function GET(request: Request) {
     const user = await getCurrentUser(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(request.url);
+    const db = getDb();
     let symptoms = [];
     if (user.role === 'patient') {
-      const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id);
+      const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id) as any;
       if (!patient) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
       symptoms = db.prepare('SELECT * FROM symptoms WHERE patient_id = ? ORDER BY is_resolved ASC, severity DESC, created_at DESC').all(patient.id);
     } else if (user.role === 'doctor') {

@@ -40,6 +40,11 @@ export async function POST(request: Request) {
     `).run(user.id, patient.user_id, patient.id, user.id, messageContent, now);
 
     const updatedPatient = db.prepare('SELECT * FROM patients WHERE id = ?').get(patient.id);
+    console.log('[assign-patient] Assignment result:', {
+      patientId: patient.id,
+      assignedDoctorId: (updatedPatient as any)?.assigned_doctor_id,
+      doctorUserId: user.id,
+    });
     return NextResponse.json({ patient: updatedPatient }, { status: 200 });
   } catch (err: any) {
     console.error('Assign patient error:', err);

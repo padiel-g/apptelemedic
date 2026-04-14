@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { supabase } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { userUpdateSchema, patientUpdateSchema } from '@/lib/validators';
 
 export async function PATCH(request: Request, { params }: { params: { userId: string } }) {
@@ -9,55 +9,64 @@ export async function PATCH(request: Request, { params }: { params: { userId: st
     const user = await getCurrentUser(request);
     if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const targetUserId = parseInt(params.userId);
+    const db = getDb();
+    const targetUserId = params.userId;
     const body = await request.json();
     const userResult = userUpdateSchema.safeParse(body);
     const patientResult = patientUpdateSchema.safeParse(body);
-    
+
     if (!userResult.success || !patientResult.success) {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
 
-    const { data: targetUser } = await supabase.from('users').select('*').eq('id', targetUserId).maybeSingle();
+    const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(targetUserId) as any;
     if (!targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     const activeCheck: any = userResult.data.is_active;
     if (activeCheck !== undefined && (activeCheck === false || activeCheck === 0) && targetUserId === user.id) {
-       return NextResponse.json({ error: 'Cannot deactivate yourself' }, { status: 400 });
+      return NextResponse.json({ error: 'Cannot deactivate yourself' }, { status: 400 });
     }
 
     const isPatient = targetUser.role === 'patient';
-    let targetPatientId = null;
+    let targetPatientId: number | null = null;
 
-    if (isPatient && (patientResult.data.assigned_doctor_id !== undefined || Object.keys(patientResult.data).length > 0)) {
-       const { data: pData } = await supabase.from('patients').select('id, assigned_doctor_id').eq('user_id', targetUserId).maybeSingle();
-       if (!pData) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
-       targetPatientId = pData.id;
+    if (isPatient && Object.keys(patientResult.data).length > 0) {
+      const pData = db.prepare('SELECT id, assigned_doctor_id FROM patients WHERE user_id = ?').get(targetUserId) as any;
+      if (!pData) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+      targetPatientId = pData.id;
     }
 
-    if (Object.keys(userResult.data).length > 0) {
-       const updates: Record<string, any> = { ...userResult.data };
-       // handle is_active correctly as boolean for PG
-       if (updates.is_active !== undefined) updates.is_active = !!updates.is_active;
-       await supabase.from('users').update(updates).eq('id', targetUserId);
+    // Update users table
+    const userUpdates = { ...userResult.data } as Record<string, any>;
+    if (userUpdates.is_active !== undefined) userUpdates.is_active = userUpdates.is_active ? 1 : 0;
+    const userKeys = Object.keys(userUpdates);
+    if (userKeys.length > 0) {
+      const setClause = userKeys.map(k => `${k} = ?`).join(', ');
+      db.prepare(`UPDATE users SET ${setClause} WHERE id = ?`).run(...Object.values(userUpdates), targetUserId);
     }
 
+    // Update patients table
     if (isPatient && targetPatientId && Object.keys(patientResult.data).length > 0) {
-       await supabase.from('patients').update(patientResult.data).eq('id', targetPatientId);
-       await supabase.from('audit_logs').insert({
-          user_id: user.id, action: 'patient.updated', target_type: 'patient', target_id: targetPatientId, details: patientResult.data
-       });
+      const pKeys = Object.keys(patientResult.data);
+      const pSetClause = pKeys.map(k => `${k} = ?`).join(', ');
+      db.prepare(`UPDATE patients SET ${pSetClause} WHERE id = ?`).run(...Object.values(patientResult.data), targetPatientId);
+
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO audit_logs (user_id, action, target_type, target_id, details, created_at)
+        VALUES (?, 'patient.updated', 'patient', ?, ?, ?)
+      `).run(user.id, String(targetPatientId), JSON.stringify(patientResult.data), now);
     }
 
-    const { data: updatedUser } = await supabase.from('users').select('id, email, full_name, role, is_active').eq('id', targetUserId).single();
+    const updatedUser = db.prepare('SELECT id, email, full_name, role, is_active FROM users WHERE id = ?').get(targetUserId) as any;
     let updatedPatient = null;
     if (isPatient) {
-       const { data: up } = await supabase.from('patients').select('assigned_doctor_id, conditions').eq('user_id', targetUserId).maybeSingle();
-       updatedPatient = up;
+      updatedPatient = db.prepare('SELECT assigned_doctor_id, conditions FROM patients WHERE user_id = ?').get(targetUserId) as any;
     }
 
     return NextResponse.json({ user: { ...updatedUser, ...(updatedPatient && { patient: updatedPatient }) } });
   } catch (error) {
+    console.error('Admin user PATCH error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -67,16 +76,21 @@ export async function DELETE(request: Request, { params }: { params: { userId: s
     const user = await getCurrentUser(request);
     if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const targetUserId = parseInt(params.userId);
+    const db = getDb();
+    const targetUserId = params.userId;
     if (targetUserId === user.id) return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
 
-    await supabase.from('users').update({ is_active: false }).eq('id', targetUserId);
-    await supabase.from('audit_logs').insert({
-       user_id: user.id, action: 'user.deleted', target_type: 'user', target_id: targetUserId
-    });
+    db.prepare('UPDATE users SET is_active = 0 WHERE id = ?').run(targetUserId);
+
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO audit_logs (user_id, action, target_type, target_id, created_at)
+      VALUES (?, 'user.deleted', 'user', ?, ?)
+    `).run(user.id, targetUserId, now);
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Admin user DELETE error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

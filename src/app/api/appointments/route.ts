@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     let patientId: number;
-    let doctorId: number;
+    let doctorId: string;
 
     if (user.role === 'patient') {
       const patient = db.prepare('SELECT id, assigned_doctor_id FROM patients WHERE user_id = ?').get(user.id) as any;

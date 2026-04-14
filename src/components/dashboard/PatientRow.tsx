@@ -21,7 +21,7 @@ function deviceStatus(lastSeen: string | null): { label: string; cls: string } {
     : { label: 'Offline', cls: 'text-red-500' };
 }
 
-export function PatientRow({ patient, currentUserId, onAssignChange }: { patient: PatientWithData; currentUserId?: number; onAssignChange?: () => void }) {
+export function PatientRow({ patient, currentUserId, onAssignChange }: { patient: PatientWithData; currentUserId?: string; onAssignChange?: () => void }) {
   const { latestReading } = patient;
   const ds = deviceStatus(patient.deviceLastSeenAt);
   const [assigning, setAssigning] = useState(false);
